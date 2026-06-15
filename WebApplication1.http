@@ -1,0 +1,67 @@
+@WebApplication1_HostAddress = http://localhost:5129
+
+### Health Check
+GET {{WebApplication1_HostAddress}}/api/health
+Accept: application/json
+
+###
+
+### Get All Students
+GET {{WebApplication1_HostAddress}}/api/students
+Accept: application/json
+
+###
+
+### Get Student by ID
+GET {{WebApplication1_HostAddress}}/api/students/1
+Accept: application/json
+
+###
+
+### Create New Student
+POST {{WebApplication1_HostAddress}}/api/students
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "dateOfBirth": "2000-01-15"
+}
+
+###
+
+### Get All Courses
+GET {{WebApplication1_HostAddress}}/api/courses
+Accept: application/json
+
+###
+
+### Get All Instructors
+GET {{WebApplication1_HostAddress}}/api/instructors
+Accept: application/json
+
+###
+
+### Get All Enrollments
+GET {{WebApplication1_HostAddress}}/api/enrollments
+Accept: application/json
+
+###
+
+### Get Enrollments by Student
+GET {{WebApplication1_HostAddress}}/api/enrollments/student/1
+Accept: application/json
+
+###
+
+### Get All Assignments
+GET {{WebApplication1_HostAddress}}/api/assignments
+Accept: application/json
+
+###
+
+### Get Assignments by Course
+GET {{WebApplication1_HostAddress}}/api/assignments/course/1
+Accept: application/json
+
+###
