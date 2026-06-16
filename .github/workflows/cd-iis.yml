@@ -41,6 +41,15 @@ jobs:
         run: |
           Compress-Archive -Path publish\* -DestinationPath app.zip -Force
 
+      - name: Verify ZIP artifact
+        shell: powershell
+        run: |
+          Get-ChildItem
+          if (!(Test-Path app.zip)) {
+            Write-Error "app.zip not found"
+            exit 1
+          }
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -52,6 +61,7 @@ jobs:
         shell: powershell
         run: |
           aws s3 cp app.zip s3://${{ env.S3_BUCKET }}/app.zip --region ${{ env.AWS_REGION }}
+          aws s3 ls s3://${{ env.S3_BUCKET }} --region ${{ env.AWS_REGION }}
 
       - name: Deploy to IIS using SSM
         shell: powershell
@@ -78,3 +88,4 @@ jobs:
             --document-name "AWS-RunPowerShellScript" `
             --parameters $params `
             --region "${{ env.AWS_REGION }}"
+            
