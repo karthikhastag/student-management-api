@@ -1,1 +1,80 @@
+name: CD - Deploy .NET App to IIS
 
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    env:
+      AWS_REGION: eu-north-1
+      INSTANCE_ID: i-06e75f5467ebc8a5a
+      S3_BUCKET: dotnet-iis-artifacts
+      IIS_SITE_NAME: "Default Web Site"
+      IIS_APP_POOL: "DefaultAppPool"
+      IIS_DEPLOY_PATH: "C:\inetpub\wwwroot\MyApp"
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish --configuration Release --output publish
+
+      - name: Create ZIP artifact
+        shell: powershell
+        run: |
+          Compress-Archive -Path publish\* -DestinationPath app.zip -Force
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload artifact to S3
+        shell: powershell
+        run: |
+          aws s3 cp app.zip s3://${{ env.S3_BUCKET }}/app.zip --region ${{ env.AWS_REGION }}
+
+      - name: Deploy to IIS using SSM
+        shell: powershell
+        run: |
+          $commands = @(
+            "Import-Module WebAdministration",
+            "New-Item -ItemType Directory -Force -Path C:\deploy",
+            "New-Item -ItemType Directory -Force -Path '${{ env.IIS_DEPLOY_PATH }}'",
+            "aws s3 cp s3://${{ env.S3_BUCKET }}/app.zip C:\deploy\app.zip --region ${{ env.AWS_REGION }}",
+            "Stop-WebSite -Name '${{ env.IIS_SITE_NAME }}'",
+            "Stop-WebAppPool -Name '${{ env.IIS_APP_POOL }}'",
+            "Remove-Item -Path '${{ env.IIS_DEPLOY_PATH }}\*' -Recurse -Force -ErrorAction SilentlyContinue",
+            "Expand-Archive -Path C:\deploy\app.zip -DestinationPath '${{ env.IIS_DEPLOY_PATH }}' -Force",
+            "Start-WebAppPool -Name '${{ env.IIS_APP_POOL }}'",
+            "Start-WebSite -Name '${{ env.IIS_SITE_NAME }}'"
+          )
+
+          $params = @{
+            commands = $commands
+          } | ConvertTo-Json -Compress
+
+          aws ssm send-command `
+            --instance-ids "${{ env.INSTANCE_ID }}" `
+            --document-name "AWS-RunPowerShellScript" `
+            --parameters $params `
+            --region "${{ env.AWS_REGION }}"
