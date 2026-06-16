@@ -14,9 +14,9 @@ jobs:
       AWS_REGION: eu-north-1
       INSTANCE_ID: i-06e75f5467ebc8a5a
       S3_BUCKET: dotnet-iis-artifacts
-      IIS_SITE_NAME: "Default Web Site"
-      IIS_APP_POOL: "DefaultAppPool"
-      IIS_DEPLOY_PATH: "C:\inetpub\wwwroot\MyApp"
+      IIS_SITE_NAME: 'Default Web Site'
+      IIS_APP_POOL: 'DefaultAppPool'
+      IIS_DEPLOY_PATH: 'C:\inetpub\wwwroot\MyApp'
 
     steps:
       - name: Checkout source code
